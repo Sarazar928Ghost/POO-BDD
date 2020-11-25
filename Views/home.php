@@ -6,7 +6,18 @@
     <title>Titre</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
 </head>
+<body>
     <div class="container">
+    <?php if(!empty($_SESSION['message'])) : ?>
+    <div class="alert alert-success" role="alert">
+        <?php echo $_SESSION['message']; unset($_SESSION['message']); ?>
+    </div>
+    <?php endif; ?>
+    <?php if(!empty($_SESSION['erreur'])) : ?>
+    <div class="alert alert-danger" role="alert">
+        <?php echo $_SESSION['erreur']; unset($_SESSION['erreur']); ?>
+    </div>
+    <?php endif; ?>
         <?= $contenu ?>
     </div>
     <div class="text-center">
