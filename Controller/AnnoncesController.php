@@ -3,6 +3,9 @@ namespace App\Controller;
 
 use App\Models\AnnoncesModel;
 use App\Core\Form;
+use App\Core\SuccessError;
+use App\Core\Util;
+use App\Core\Validate;
 
 class AnnoncesController extends AbstractController
 {  
@@ -53,12 +56,13 @@ class AnnoncesController extends AbstractController
     public function ajouter()
     {
         // On vérifie si l'utilisateur est connecté
-        if(isset($_SESSION['user']) && !empty($_SESSION['user']['id']))
+        if(Validate::isConnected())
         {
+            $erreur = '';
             // L'utilisateur est connecté
 
             //On vérifie si le formulaire est complet
-            if(Form::validate($_POST, ['titre', 'description']))
+            if(Validate::validateForm($_POST, ['titre', 'description']))
             {
                 // Le formulaire est complet
                 // On se protège contre les failles XSS
@@ -66,26 +70,33 @@ class AnnoncesController extends AbstractController
                 $titre = strip_tags($_POST['titre']);
                 $description = strip_tags($_POST['description']);
 
-                // On instancie notre modèle
-                $annonce = new AnnoncesModel;
+                if(strlen($titre) < 26)
+                {
+                    // On instancie notre modèle
+                    $annonce = new AnnoncesModel;
 
-                // On hydrate
-                $annonce->setTitre($titre)
-                    ->setDescription($description)
-                    ->setActif(1)
-                    ->setUsers_id($_SESSION['user']['id']);
+                    // On hydrate
+                    $annonce->setTitre($titre)
+                        ->setDescription($description)
+                        ->setActif(1)
+                        ->setUsers_id($_SESSION['user']['id']);
 
-                // On enregistre
-                $annonce->create();
+                    // On enregistre
+                    $annonce->create();
 
-                // On redirige
-                $_SESSION['message'] = 'Votre annonce a été enregistrée avec succès';
-                header('Location: /users/profil');
-                exit;
+                    // On redirige
+                    SuccessError::redirect(['message' => 'Votre annonce a été enregistrée avec succès'], 'Location: /users/profil');
+                }
+
+                $erreur = 'Le titre est trop long ( max : 25 )';
             }else
             {
+                $erreur = 'Le formulaire est incomplet';
+            }
+
+            if($erreur){
                 // Le formulaire est incomplet
-                $_SESSION['erreur'] = !empty($_POST) ? $_SESSION['erreur'] = 'Le formulaire est incomplet' : '';
+                $_SESSION['erreur'] = !empty($_POST) ? $_SESSION['erreur'] = $erreur : '';
                 $titre = isset($_POST['titre']) ? strip_tags($_POST['titre']) : '';
                 $description = isset($_POST['description']) ? strip_tags($_POST['description']) : '';
             }
@@ -105,9 +116,7 @@ class AnnoncesController extends AbstractController
         }else
         {
             // L'utilisateur n'est pas connecté
-            $_SESSION['erreur'] = 'Vous devez être connecté pour accéder a cette page';
-            header('Location: /users/login');
-            exit;
+            SuccessError::redirect(['erreur' => 'Vous devez être connecté pour accéder a cette page'], 'Location: /users/login');
         }
     }
     /**
@@ -120,8 +129,9 @@ class AnnoncesController extends AbstractController
     {
         $id = (int)$id;
         // On vérifie si l'utilisateur est connecté
-        if(isset($_SESSION['user']) && !empty($_SESSION['user']['id']))
+        if(Validate::isConnected())
         {
+            $erreur = '';
             // On va vérifier si l'annonce existe dans la base
             // On instancie notre modèle
             $annonceModel = new AnnoncesModel;
@@ -132,49 +142,58 @@ class AnnoncesController extends AbstractController
             // Si l'annonce n'éxiste pas, on retourne à la liste des annonces
             if(!$annonce)
             {
-                $_SESSION['erreur'] = 'L\'annonce recherchée n\'éxiste pas';
-                header('Location: /annonces');
-                exit;
+                SuccessError::redirect(['erreur' => 'L\'annonce recherchée n\'éxiste pas'], Util::getRefererOrRacine());
             }
 
             // On vérifie si l'utilisateur est propriétaire de l'annonce
-            if(!in_array('ROLE_ADMIN', $_SESSION['user']['roles']) && $annonce->users_id !== $_SESSION['user']['id'])
+            if(!Validate::isAdmin() && $annonce->users_id !== $_SESSION['user']['id'])
             {
-                $_SESSION['erreur'] = 'Vous n\'avez pas accès à cette page';
-                header('Location: /annonces');
-                exit;
+                SuccessError::redirect(['erreur' => 'Vous n\'avez pas accès à cette page'], 'Location: /users/profil');
             }
 
             //On traite le formulaire
-            if(Form::validate($_POST, ['titre', 'description']))
+            if(Validate::validateForm($_POST, ['titre', 'description']))
             {
                 // On se protège contre les failles XSS
                 $titre = strip_tags($_POST['titre']);
                 $description = strip_tags($_POST['description']);
 
-                // On stocke l'annonce
-                $annonceModif = new AnnoncesModel;
+                if(strlen($titre) < 26)
+                {
+                    // On stocke l'annonce
+                    $annonceModif = new AnnoncesModel;
 
-                // On hydrate
-                $annonceModif->setId($annonce->id)
-                    ->setTitre($titre)
-                    ->setDescription($description);
-                
-                // On met à jour l'annonce
-                $annonceModif->update();
+                    // On hydrate
+                    $annonceModif->setId($annonce->id)
+                        ->setTitre($titre)
+                        ->setDescription($description);
 
-                // On redirige
-                $_SESSION['message'] = 'Votre annonce a été modifiée avec succès';
-                header('Location: /users/profil');
-                exit;
+                    // On met à jour l'annonce
+                    $annonceModif->update();
+
+                    // On redirige
+                    SuccessError::redirect(['message' => 'Votre annonce a été modifiée avec succès'], 'Location: /users/profil');
+                }
+
+                $erreur = 'Le titre est trop long ( max : 25 )';
+            }else
+            {
+                $erreur = 'Le formulaire est incomplet';
+            }
+
+            if($erreur){
+                // Le formulaire est incomplet
+                $_SESSION['erreur'] = !empty($_POST) ? $_SESSION['erreur'] = $erreur : '';
+                $titre = isset($_POST['titre']) && !empty($_POST['titre']) ? strip_tags($_POST['titre']) : $annonce->titre;
+                $description = isset($_POST['description']) && !empty($_POST['description']) ? strip_tags($_POST['description']) : $annonce->description;
             }
 
             $form = new Form;
             $form->debutForm()
                 ->ajoutLabelFor('titre', 'Titre de l\'annonce :')
-                ->ajoutInput('text', 'titre', ['id' => 'titre', 'class' => 'form-control', 'value' => $annonce->titre])
+                ->ajoutInput('text', 'titre', ['id' => 'titre', 'class' => 'form-control', 'value' => $titre])
                 ->ajoutLabelFor('description', 'Description de l\'annonce :')
-                ->ajoutTextarea('description', $annonce->description, ['id' => 'description', 'class' => 'form-control'])
+                ->ajoutTextarea('description', $description, ['id' => 'description', 'class' => 'form-control'])
                 ->ajoutBouton('Modifier', ['class' => 'btn btn-primary'])
                 ->finForm();
 
@@ -183,9 +202,7 @@ class AnnoncesController extends AbstractController
         }else
         {
             // L'utilisateur n'est pas connecté
-            $_SESSION['erreur'] = 'Vous devez être connecté pour accéder a cette page';
-            header('Location: /users/login');
-            exit;
+            SuccessError::redirect(['erreur' => 'Vous devez être connecté pour accéder a cette page'], 'Location: /users/login');
         }
     }
 }

@@ -1,1 +1,1 @@
-<p>Page d'accueil du site</p>
+<h1 class="d-flex justify-content-center mt-4">Bienvenue à l'accueil</h1>

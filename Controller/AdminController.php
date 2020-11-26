@@ -1,6 +1,9 @@
 <?php
 namespace App\Controller;
 
+use App\Core\SuccessError;
+use App\Core\Util;
+use App\Core\Validate;
 use App\Models\AnnoncesModel;
 
 class AdminController extends AbstractController
@@ -8,8 +11,13 @@ class AdminController extends AbstractController
     public function index()
     {
         // On vérifie si on est admin sinon redirigé
-        $this->isAdmin();
-        $this->render('admin/index', [], 'admin');
+        if(Validate::isConnected() && Validate::isAdmin())
+        {
+            $this->render('admin/index', [], 'admin');
+        }else
+        {
+            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas administrateur'], Util::getRefererOrRacine());
+        }
     }
 
     /**
@@ -19,25 +27,22 @@ class AdminController extends AbstractController
      */
     public function annonces()
     {
-        $this->isAdmin();
-        $annonceModel = new AnnoncesModel;
-        $annonces = $annonceModel->findAll();
-        $this->render('admin/annonces', compact('annonces'), 'admin');
-    }
-
-    /**
-     * Permet de supprimer une annonce via le panel admin
-     *
-     * @param mixed $id
-     * @return void
-     */
-    public function deleteAnnonce($id)
-    {
-        $this->isAdmin();
-        $id = (int)$id;
-        $annonce = new AnnoncesModel;
-        $annonce->delete($id);
-        header('Location: '. $_SERVER['HTTP_REFERER']);
+        if(Validate::isConnected() && Validate::isAdmin())
+        {
+            $annonceModel = new AnnoncesModel;
+            $annonces = $annonceModel->findAll();
+            foreach($annonces as $annonce){
+                $desc = $annonce->description;
+                if(strlen($desc) > 50)
+                {
+                    $annonce->description = substr($desc, 0, -(strlen($desc) - 50));
+                }
+            }
+            $this->render('admin/annonces', compact('annonces'), 'admin');
+        }else
+        {
+            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas administrateur'], Util::getRefererOrRacine());
+        }
     }
 
     /**
@@ -48,35 +53,20 @@ class AdminController extends AbstractController
      */
     public function activeAnnonce($id) : void
     {
-        $this->isAdmin();
-        $id = (int)$id;
-        $annonceModel = new AnnoncesModel;
-        $annonce = $annonceModel->find($id);
-        if($annonce){
-            $annonce = $annonceModel->hydrate($annonce);
-            $annonce->setActif($annonce->getActif() ? 0 : 1);
-            $annonce->update();
-        } 
+        if(Validate::isConnected() && Validate::isAdmin())
+        {
+            $id = (int)$id;
+            $annonceModel = new AnnoncesModel;
+            $annonce = $annonceModel->find($id);
+            if($annonce){
+                $annonce = $annonceModel->hydrate($annonce);
+                $annonce->setActif($annonce->getActif() ? 0 : 1);
+                $annonce->update();
+            } 
+        }else
+        {
+            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas administrateur'], Util::getRefererOrRacine());
+        }
     }
 
-    /**
-     * Vérifie si on est admin
-     *
-     * @return void
-     */
-    private function isAdmin() : void
-    {
-        // On vérifie si on est connecté et si "ROLE_ADMIN" est dans nos roles
-        if(isset($_SESSION['user']) && !empty($_SESSION['user']['id'])){
-            // On est connecté
-            if(in_array('ROLE_ADMIN', $_SESSION['user']['roles']))
-            {
-                // On est admin
-                return;
-            }
-        }
-        $_SESSION['erreur'] = 'Vous n\'avez pas accès a cette zone';
-        header('Location: /');
-        exit;
-    }
 }

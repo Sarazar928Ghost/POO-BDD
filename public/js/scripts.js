@@ -5,7 +5,7 @@ window.onload = () => {
     }
 }
 
-function activer(){
+function activer(route){
     let xmlhttp = new XMLHttpRequest;
     xmlhttp.open('GET', '/admin/activeAnnonce/'+this.dataset.id)
     xmlhttp.send()

@@ -2,6 +2,9 @@
 namespace App\Controller;
 
 use App\Core\Form;
+use App\Core\SuccessError;
+use App\Core\Util;
+use App\Core\Validate;
 use App\Models\AnnoncesModel;
 use App\Models\UsersModel;
 
@@ -15,13 +18,11 @@ class UsersController extends AbstractController
     public function login()
     {
         // Si l'utilisateur est déjà connecté on le redirige a l'accueil
-        if(isset($_SESSION['user']) && !empty($_SESSION['user']['id'])){
-            $_SESSION['erreur'] = 'Vous êtes déjà connecté';
-            header('Location: /');
-            exit;
+        if(Validate::isConnected()){
+            SuccessError::redirect(['erreur' => 'Vous êtes déjà connecté'], Util::getRefererOrRacine());
         }
         // On vérifie si le formulaire est complet
-        if(Form::validate($_POST, ['email', 'password']))
+        if(Validate::validateForm($_POST, ['email', 'password']))
         {
             // Le formulaire est complet
             // On va chercher dans la base de données l'utilisateur avec l'email entré
@@ -31,17 +32,13 @@ class UsersController extends AbstractController
                 $usersModel = new UsersModel;
                 $user = $usersModel->findOneByEmail($email);
             }else{
-                $_SESSION['erreur'] = 'L\'adresse e-mail et/ou le mot de passe est incorrect';
-                header('Location: /users/login');
-                exit;
+                SuccessError::redirect(['erreur' => 'L\'adresse e-mail et/ou le mot de passe est incorrect'], 'Location: /users/login');
             }
 
             // Si l'utlistauer n'éxiste pas
             if(!$user){
                 // On evnoie un message de session
-                $_SESSION['erreur'] = 'L\'adresse e-mail et/ou le mot de passe est incorrect';
-                header('Location: /users/login');
-                exit;
+                SuccessError::redirect(['erreur' => 'L\'adresse e-mail et/ou le mot de passe est incorrect'], 'Location: /users/login');
             }
             // L'utilisateur éxiste
             $user = $usersModel->hydrate($user);
@@ -83,13 +80,11 @@ class UsersController extends AbstractController
     public function register()
     {
         // Si l'utilisateur est déjà connecté on le redirige a l'accueil
-        if(isset($_SESSION['user']) && !empty($_SESSION['user']['id'])){
-            $_SESSION['erreur'] = 'Vous êtes déjà connecté';
-            header('Location: /');
-            exit;
+        if(Validate::isConnected()){
+            SuccessError::redirect(['erreur' => 'Vous êtes déjà connecté'], Util::getRefererOrRacine());
         }
         // On vérifie si le formulaire est valide
-        if(Form::validate($_POST, ['email', 'password']))
+        if(Validate::validateForm($_POST, ['email', 'password']))
         {
             // Le formulaire est valide
             // On "nettoie" l'adresse email
@@ -101,14 +96,21 @@ class UsersController extends AbstractController
             // Vérifie si l'email reçu est un email valide
             if(filter_var($email, FILTER_VALIDATE_EMAIL)){
                 // On hydrate l'utilisateur
-                $user = new UsersModel;
+                $userModel = new UsersModel;
+                
+                $user = $userModel->findOneByEmail($email);
+                if($user){
+                    SuccessError::redirect(['erreur' => 'Email déjà utilisé'], Util::getRefererOrRacine());
+                }
 
-                $user->setEmail($email)
+                $userModel->setEmail($email)
                     ->setPassword($pass);
 
                 // On stocke l'utilisateur en base de données
-                $user->create();
+                $userModel->create();
+                SuccessError::redirect(['message' => 'Vous vous êtes bien inscris !'], '/users/login');
             }
+            SuccessError::redirect(['erreur' => 'Email ou mot de passe incorrect'], Util::getRefererOrRacine());
         }
 
         $form = new Form;
@@ -132,62 +134,63 @@ class UsersController extends AbstractController
     public function profil() : void
     {
         // Si l'utilisateur n'est pas connecté
-        if(!isset($_SESSION['user']) && empty($_SESSION['user']['id'])){
-            $_SESSION['erreur'] = 'Vous n\'êtes pas connecté au site';
-            header('Location: /');
-            exit;
+        if(!Validate::isConnected()){
+            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas connecté au site'], Util::getRefererOrRacine());
         }
 
         $annonceModel = new AnnoncesModel;
         $annonces = $annonceModel->findBy(['users_id' => $_SESSION['user']['id']]);
+
+        foreach($annonces as $annonce){
+            $desc = $annonce->description;
+            if(strlen($desc) > 50)
+            {
+                $annonce->description = substr($desc, 0, -(strlen($desc) - 50));
+            }
+        }
 
         $this->render('users/profil', compact('annonces'));
     }
 
     public function deleteAnnonce($id)
     {
-        $location = 'Location: ';
-        $location .= isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/';
         // Si l'utilisateur n'est pas connecté
-        if(!isset($_SESSION['user']) && empty($_SESSION['user']['id'])){
-            $_SESSION['erreur'] = 'Vous n\'êtes pas connecté au site';
-            header($location);
-            exit;
+        if(!Validate::isConnected()){
+            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas connecté au site'], Util::getRefererOrRacine());
         }
 
         $annonceModel = new AnnoncesModel;
         $annonce = $annonceModel->find($id);
         if($annonce)
         {
-            if($_SESSION['user']['id'] == $annonce->users_id)
+            if($_SESSION['user']['id'] == $annonce->users_id || Validate::isAdmin())
             {
                 $annonceModel->delete($id);
-                $_SESSION['message'] = 'L\'annonce a bien été supprimé';
-                header($location);
-                exit;
+                SuccessError::redirect(['message' => 'L\'annonce a bien été supprimé'], Util::getRefererOrRacine());
             }else
             {
-                $_SESSION['erreur'] = 'L\'annonce demandé ne vous appartient pas';
-                header($location);
-                exit;
+                SuccessError::redirect(['erreur' => 'L\'annonce demandé ne vous appartient pas'], Util::getRefererOrRacine());
             }
         }else
         {
-            $_SESSION['erreur'] = 'L\'annonce demandé n\'éxiste pas';
-            header($location);
-            exit;
+            SuccessError::redirect(['erreur' => 'L\'annonce demandé n\'éxiste pas'], Util::getRefererOrRacine());
         }
     }
     
     /**
-     * Déconexion de l'utilisateur
+     * Déconnexion de l'utilisateur
      *
      * @return void
      */
     public function logout()
     {
-        unset($_SESSION['user']);
-        header('Location: '. $_SERVER['HTTP_REFERER']);
+        var_dump($_SESSION);
+        if(Validate::isConnected()){
+            unset($_SESSION['user']);
+            header('Location: /users/login');
+            exit;
+        }
+        header('Location: /users/login');
         exit;
     }
 }

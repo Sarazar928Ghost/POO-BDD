@@ -16,28 +16,6 @@ class Form
     }
     
     /**
-     * Valide si tous les champs proposés sont remplis
-     *
-     * @param  array $form Tableau issu du formulaire ($_POST, $_GET)
-     * @param  array $champs Tableau listant les champs obligatoires
-     * @return bool
-     */
-    public static function validate(array $form, array $champs) : bool
-    {
-        // On parcourt les champs
-        foreach($champs as $champ)
-        {
-            // Si le champ est absent ou vide dans le formulaire
-            if(!isset($form[$champ]) || empty($form[$champ]))
-            {
-                // On sort en retournant false
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    /**
      * Ajoute les attributs envoyé à la balise
      *
      * @param  array $attributs Tableau associatif ['class' => 'form-control, 'required' => true]
