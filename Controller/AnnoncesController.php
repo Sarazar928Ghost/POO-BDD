@@ -25,11 +25,12 @@ class AnnoncesController extends AbstractController
     /**
      * Affiche 1 annonce
      *
-     * @param  int $id Id de l'annonce
+     * @param  mixed $id Id de l'annonce
      * @return void
      */
-    public function read(int $id)
+    public function read($id)
     {
+        $id = (int)$id;
         // On instancie le modèle
         $annoncesModel = new AnnoncesModel;
 
@@ -79,7 +80,7 @@ class AnnoncesController extends AbstractController
 
                 // On redirige
                 $_SESSION['message'] = 'Votre annonce a été enregistrée avec succès';
-                header('Location: /');
+                header('Location: /users/profil');
                 exit;
             }else
             {
@@ -112,11 +113,12 @@ class AnnoncesController extends AbstractController
     /**
      * Modifier une annonce
      *
-     * @param integer $id
+     * @param mixed $id
      * @return void
      */
-    public function modifier(int $id)
+    public function modifier($id)
     {
+        $id = (int)$id;
         // On vérifie si l'utilisateur est connecté
         if(isset($_SESSION['user']) && !empty($_SESSION['user']['id']))
         {
@@ -136,7 +138,7 @@ class AnnoncesController extends AbstractController
             }
 
             // On vérifie si l'utilisateur est propriétaire de l'annonce
-            if($annonce->users_id !== $_SESSION['user']['id'])
+            if(!in_array('ROLE_ADMIN', $_SESSION['user']['roles']) && $annonce->users_id !== $_SESSION['user']['id'])
             {
                 $_SESSION['erreur'] = 'Vous n\'avez pas accès à cette page';
                 header('Location: /annonces');
@@ -163,7 +165,7 @@ class AnnoncesController extends AbstractController
 
                 // On redirige
                 $_SESSION['message'] = 'Votre annonce a été modifiée avec succès';
-                header('Location: /');
+                header('Location: /users/profil');
                 exit;
             }
 

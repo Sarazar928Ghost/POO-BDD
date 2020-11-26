@@ -2,7 +2,6 @@
 namespace App\Core;
 
 use App\Controller\MainController;
-use Exception;
 
 /*
 * Routeur principal

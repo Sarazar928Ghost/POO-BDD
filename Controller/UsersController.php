@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Core\Form;
+use App\Models\AnnoncesModel;
 use App\Models\UsersModel;
 
 class UsersController extends AbstractController
@@ -15,6 +16,7 @@ class UsersController extends AbstractController
     {
         // Si l'utilisateur est déjà connecté on le redirige a l'accueil
         if(isset($_SESSION['user']) && !empty($_SESSION['user']['id'])){
+            $_SESSION['erreur'] = 'Vous êtes déjà connecté';
             header('Location: /');
             exit;
         }
@@ -80,6 +82,12 @@ class UsersController extends AbstractController
      */
     public function register()
     {
+        // Si l'utilisateur est déjà connecté on le redirige a l'accueil
+        if(isset($_SESSION['user']) && !empty($_SESSION['user']['id'])){
+            $_SESSION['erreur'] = 'Vous êtes déjà connecté';
+            header('Location: /');
+            exit;
+        }
         // On vérifie si le formulaire est valide
         if(Form::validate($_POST, ['email', 'password']))
         {
@@ -114,6 +122,61 @@ class UsersController extends AbstractController
         ->finForm();
 
         $this->render('users/register', ['registerForm' => $form->create()]);
+    }
+
+    /**
+     * Permet d'accéder a son profil
+     *
+     * @return void
+     */
+    public function profil() : void
+    {
+        // Si l'utilisateur n'est pas connecté
+        if(!isset($_SESSION['user']) && empty($_SESSION['user']['id'])){
+            $_SESSION['erreur'] = 'Vous n\'êtes pas connecté au site';
+            header('Location: /');
+            exit;
+        }
+
+        $annonceModel = new AnnoncesModel;
+        $annonces = $annonceModel->findBy(['users_id' => $_SESSION['user']['id']]);
+
+        $this->render('users/profil', compact('annonces'));
+    }
+
+    public function deleteAnnonce($id)
+    {
+        $location = 'Location: ';
+        $location .= isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/';
+        // Si l'utilisateur n'est pas connecté
+        if(!isset($_SESSION['user']) && empty($_SESSION['user']['id'])){
+            $_SESSION['erreur'] = 'Vous n\'êtes pas connecté au site';
+            header($location);
+            exit;
+        }
+
+        $annonceModel = new AnnoncesModel;
+        $annonce = $annonceModel->find($id);
+        if($annonce)
+        {
+            if($_SESSION['user']['id'] == $annonce->users_id)
+            {
+                $annonceModel->delete($id);
+                $_SESSION['message'] = 'L\'annonce a bien été supprimé';
+                header($location);
+                exit;
+            }else
+            {
+                $_SESSION['erreur'] = 'L\'annonce demandé ne vous appartient pas';
+                header($location);
+                exit;
+            }
+        }else
+        {
+            $_SESSION['erreur'] = 'L\'annonce demandé n\'éxiste pas';
+            header($location);
+            exit;
+        }
     }
     
     /**
