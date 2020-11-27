@@ -1,3 +1,6 @@
+<?php
+use App\Core\Validate;
+?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,6 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Titre</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/main.css">
+
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -23,8 +28,8 @@
             </li>
         </ul>
         <ul class="navbar-nav ml-auto">
-            <?php if(isset($_SESSION['user']) && !empty($_SESSION['user']['id'])): ?>
-                <?php if(in_array('ROLE_ADMIN', $_SESSION['user']['roles'])): ?>
+            <?php if(Validate::isConnected()): ?>
+                <?php if(Validate::isAdmin()): ?>
                     <li class="nav-item">
                     <a class="nav-link" href="/admin">Admin</a>
                     </li>

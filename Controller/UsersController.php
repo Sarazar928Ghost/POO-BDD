@@ -19,7 +19,7 @@ class UsersController extends AbstractController
     {
         // Si l'utilisateur est déjà connecté on le redirige a l'accueil
         if(Validate::isConnected()){
-            SuccessError::redirect(['erreur' => 'Vous êtes déjà connecté'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => ALREADY_CONNECTED]);
         }
         // On vérifie si le formulaire est complet
         if(Validate::validateForm($_POST, ['email', 'password']))
@@ -32,13 +32,13 @@ class UsersController extends AbstractController
                 $usersModel = new UsersModel;
                 $user = $usersModel->findOneByEmail($email);
             }else{
-                SuccessError::redirect(['erreur' => 'L\'adresse e-mail et/ou le mot de passe est incorrect'], 'Location: /users/login');
+                Util::redirect('/users/login', ['erreur' => LOGIN_INCORRECT]);
             }
 
             // Si l'utlistauer n'éxiste pas
             if(!$user){
                 // On evnoie un message de session
-                SuccessError::redirect(['erreur' => 'L\'adresse e-mail et/ou le mot de passe est incorrect'], 'Location: /users/login');
+                Util::redirect('/users/login', ['erreur' => LOGIN_INCORRECT]);
             }
             // L'utilisateur éxiste
             $user = $usersModel->hydrate($user);
@@ -48,13 +48,10 @@ class UsersController extends AbstractController
                 // Le mot de passe est bon
                 // On crée la session
                 $user->setSession();
-                header('Location: /');
-                exit;
+                Util::redirect('/');
             }else
             {
-                $_SESSION['erreur'] = 'L\'adresse e-mail et/ou le mot de passe est incorrect';
-                header('Location: /users/login');
-                exit;
+                Util::redirect('/users/login', ['erreur' => LOGIN_INCORRECT]);
             }
         }
 
@@ -81,7 +78,7 @@ class UsersController extends AbstractController
     {
         // Si l'utilisateur est déjà connecté on le redirige a l'accueil
         if(Validate::isConnected()){
-            SuccessError::redirect(['erreur' => 'Vous êtes déjà connecté'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => ALREADY_CONNECTED]);
         }
         // On vérifie si le formulaire est valide
         if(Validate::validateForm($_POST, ['email', 'password']))
@@ -100,7 +97,7 @@ class UsersController extends AbstractController
                 
                 $user = $userModel->findOneByEmail($email);
                 if($user){
-                    SuccessError::redirect(['erreur' => 'Email déjà utilisé'], Util::getRefererOrRacine());
+                    Util::redirect(Util::getRefererOrRacine(), ['erreur' => EMAIL_ALREADY_USE]);
                 }
 
                 $userModel->setEmail($email)
@@ -108,9 +105,9 @@ class UsersController extends AbstractController
 
                 // On stocke l'utilisateur en base de données
                 $userModel->create();
-                SuccessError::redirect(['message' => 'Vous vous êtes bien inscris !'], '/users/login');
+                Util::redirect('/users/login', ['message' => SUCCESS_REGISTER]);
             }
-            SuccessError::redirect(['erreur' => 'Email ou mot de passe incorrect'], Util::getRefererOrRacine());
+            Util::redirect('/users/register', ['erreur' => LOGIN_INCORRECT]);
         }
 
         $form = new Form;
@@ -135,7 +132,7 @@ class UsersController extends AbstractController
     {
         // Si l'utilisateur n'est pas connecté
         if(!Validate::isConnected()){
-            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas connecté au site'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => ALREADY_CONNECTED]);
         }
 
         $annonceModel = new AnnoncesModel;
@@ -156,7 +153,7 @@ class UsersController extends AbstractController
     {
         // Si l'utilisateur n'est pas connecté
         if(!Validate::isConnected()){
-            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas connecté au site'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => ALREADY_CONNECTED]);
         }
 
         $annonceModel = new AnnoncesModel;
@@ -166,14 +163,14 @@ class UsersController extends AbstractController
             if($_SESSION['user']['id'] == $annonce->users_id || Validate::isAdmin())
             {
                 $annonceModel->delete($id);
-                SuccessError::redirect(['message' => 'L\'annonce a bien été supprimé'], Util::getRefererOrRacine());
+                Util::redirect(Util::getRefererOrRacine(), ['message' => SUCCESS_DELETE_ANNONCE]);
             }else
             {
-                SuccessError::redirect(['erreur' => 'L\'annonce demandé ne vous appartient pas'], Util::getRefererOrRacine());
+                Util::redirect(Util::getRefererOrRacine(), ['erreur' => NOT_UR_ANNONCE]);
             }
         }else
         {
-            SuccessError::redirect(['erreur' => 'L\'annonce demandé n\'éxiste pas'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => NOT_EXIST_ANNONCE]);
         }
     }
     
@@ -184,13 +181,9 @@ class UsersController extends AbstractController
      */
     public function logout()
     {
-        var_dump($_SESSION);
         if(Validate::isConnected()){
             unset($_SESSION['user']);
-            header('Location: /users/login');
-            exit;
         }
-        header('Location: /users/login');
-        exit;
+        Util::redirect('/users/login');
     }
 }

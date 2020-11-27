@@ -8,7 +8,8 @@ use App\Core\Util;
 use App\Core\Validate;
 
 class AnnoncesController extends AbstractController
-{  
+{
+
     /**
      * Cette méthode affichera une page listant toutes les annonces de la base de données
      *
@@ -85,7 +86,7 @@ class AnnoncesController extends AbstractController
                     $annonce->create();
 
                     // On redirige
-                    SuccessError::redirect(['message' => 'Votre annonce a été enregistrée avec succès'], 'Location: /users/profil');
+                    Util::redirect('/users/profil', ['message' => SUCESS_AJOUT_ANNONCE]);
                 }
 
                 $erreur = 'Le titre est trop long ( max : 25 )';
@@ -116,7 +117,7 @@ class AnnoncesController extends AbstractController
         }else
         {
             // L'utilisateur n'est pas connecté
-            SuccessError::redirect(['erreur' => 'Vous devez être connecté pour accéder a cette page'], 'Location: /users/login');
+            Util::redirect('/users/login', ['erreur' => NOT_CONNECTED]);
         }
     }
     /**
@@ -142,13 +143,13 @@ class AnnoncesController extends AbstractController
             // Si l'annonce n'éxiste pas, on retourne à la liste des annonces
             if(!$annonce)
             {
-                SuccessError::redirect(['erreur' => 'L\'annonce recherchée n\'éxiste pas'], Util::getRefererOrRacine());
+                Util::redirect(Util::getRefererOrRacine(), ['erreur' => NOT_EXIST_ANNONCE]);
             }
 
             // On vérifie si l'utilisateur est propriétaire de l'annonce
             if(!Validate::isAdmin() && $annonce->users_id !== $_SESSION['user']['id'])
             {
-                SuccessError::redirect(['erreur' => 'Vous n\'avez pas accès à cette page'], 'Location: /users/profil');
+                Util::redirect('/users/profil', ['erreur' => NOT_ACCESS_ANNONCE]);
             }
 
             //On traite le formulaire
@@ -172,7 +173,7 @@ class AnnoncesController extends AbstractController
                     $annonceModif->update();
 
                     // On redirige
-                    SuccessError::redirect(['message' => 'Votre annonce a été modifiée avec succès'], 'Location: /users/profil');
+                    Util::redirect('/users/profil', ['message' => SUCESS_MODIF_ANNONCE]);
                 }
 
                 $erreur = 'Le titre est trop long ( max : 25 )';
@@ -202,7 +203,7 @@ class AnnoncesController extends AbstractController
         }else
         {
             // L'utilisateur n'est pas connecté
-            SuccessError::redirect(['erreur' => 'Vous devez être connecté pour accéder a cette page'], 'Location: /users/login');
+            Util::redirect('/users/login', ['erreur' => NOT_CONNECTED]);
         }
     }
 }

@@ -8,6 +8,7 @@ use App\Models\AnnoncesModel;
 
 class AdminController extends AbstractController
 {
+
     public function index()
     {
         // On vérifie si on est admin sinon redirigé
@@ -16,7 +17,7 @@ class AdminController extends AbstractController
             $this->render('admin/index', [], 'admin');
         }else
         {
-            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas administrateur'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => NOT_ADMINISTRATOR]);
         }
     }
 
@@ -41,7 +42,7 @@ class AdminController extends AbstractController
             $this->render('admin/annonces', compact('annonces'), 'admin');
         }else
         {
-            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas administrateur'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => NOT_ADMINISTRATOR]);
         }
     }
 
@@ -65,7 +66,7 @@ class AdminController extends AbstractController
             } 
         }else
         {
-            SuccessError::redirect(['erreur' => 'Vous n\'êtes pas administrateur'], Util::getRefererOrRacine());
+            Util::redirect(Util::getRefererOrRacine(), ['erreur' => NOT_ADMINISTRATOR]);
         }
     }
 
